@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 var target string
@@ -18,10 +20,11 @@ func main() {
 	}
 
 	target = os.Args[1]
+	RunCrawler(target)
 }
 
 func RunCrawler(uri string) {
-	if url == "" {
+	if uri == "" {
 		return
 	}
 
@@ -30,6 +33,8 @@ func RunCrawler(uri string) {
 	} else {
 		return
 	}
+
+	fmt.Println("Fetching", uri)
 
 	response, err := http.Get(uri)
 	if err != nil {
@@ -46,18 +51,27 @@ func RunCrawler(uri string) {
 	}
 
 	doc.Find("a").Each(func(i int, q *goquery.Selection) {
-		attr, exists := q.attr("href")
+		attr, exists := q.Attr("href")
 		if exists {
 			nextLink := TrimUrl(attr)
+			RunCrawler(nextLink)
 		}
 	})
 }
 
-func TrimUrl(uri string) {
+func TrimUrl(uri string) string {
 	uri = strings.TrimSuffix(uri, "/")
 	validUrl, err := url.Parse(uri)
 	if err != nil {
 		return ""
 	}
+
+	targetUrl, _ := url.Parse(target)
+
+	if strings.Contains(validUrl.String(), targetUrl.Host) {
+		return uri
+	}
+
+	return ""
 
 }
